@@ -36,34 +36,14 @@
 	NSString *pushAlert = @"disabled";
 	NSString *pushSound = @"disabled";
 	
-	// Check what Registered Types are turned on. This is a bit tricky since if two are enabled, and one is off, it will return a number 2... not telling you which
-	// one is actually disabled. So we are literally checking to see if rnTypes matches what is turned on, instead of by number. The "tricky" part is that the 
-	// single notification types will only match if they are the ONLY one enabled.  Likewise, when we are checking for a pair of notifications, it will only be 
-	// true if those two notifications are on.  This is why the code is written this way ;)
-	if(rntypes == UIRemoteNotificationTypeBadge){
+	// Check what Registered Types are turned on.
+	if (rntypes & UIRemoteNotificationTypeBadge) {
 		pushBadge = @"enabled";
 	}
-	else if(rntypes == UIRemoteNotificationTypeAlert){
+	if (rntypes & UIRemoteNotificationTypeAlert) {
 		pushAlert = @"enabled";
 	}
-	else if(rntypes == UIRemoteNotificationTypeSound){
-		pushSound = @"enabled";
-	}
-	else if(rntypes == ( UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeAlert)){
-		pushBadge = @"enabled";
-		pushAlert = @"enabled";
-	}
-	else if(rntypes == ( UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeSound)){
-		pushBadge = @"enabled";
-		pushSound = @"enabled";
-	}
-	else if(rntypes == ( UIRemoteNotificationTypeAlert | UIRemoteNotificationTypeSound)){
-		pushAlert = @"enabled";
-		pushSound = @"enabled";
-	}
-	else if(rntypes == ( UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeAlert | UIRemoteNotificationTypeSound)){
-		pushBadge = @"enabled";
-		pushAlert = @"enabled";
+	if (rntypes & UIRemoteNotificationTypeSound) {
 		pushSound = @"enabled";
 	}
 	
