@@ -164,7 +164,7 @@ class APNS {
  	 * </code>
 	 *
 	 * Your iPhone App Delegate.m file will point to a PHP file with this APNS Object.  The url will end up looking something like:
-	 * https://secure.yourwebsite.com/apns.php?task=register&appname=My%20App&appversion=1.0.1&deviceuid=e018c2e46efe185d6b1107aa942085a59bb865d9&devicetoken=43df9e97b09ef464a6cf7561f9f339cb1b6ba38d8dc946edd79f1596ac1b0f66&devicename=My%20Awesome%20iPhone&devicemodel=iPhone&deviceversion=3.1.2&pushbadge=enabled&pushalert=disabled&pushsound=enabled
+	 * https://secure.yourwebsite.com/apns.php?task=register&appname=My%20App&bundleid=com.example.pushtest&appversion=1.0.1&deviceuid=e018c2e46efe185d6b1107aa942085a59bb865d9&devicetoken=43df9e97b09ef464a6cf7561f9f339cb1b6ba38d8dc946edd79f1596ac1b0f66&devicename=My%20Awesome%20iPhone&devicemodel=iPhone&deviceversion=3.1.2&pushbadge=enabled&pushalert=disabled&pushsound=enabled
      *
      * @param object $db Database Object
 	 * @param array $args Optional arguments passed through $argv or $_GET
@@ -200,7 +200,8 @@ class APNS {
 			switch($args['task']){
 				case "register":
 					$this->_registerDevice(
-						$args['appname'], 
+                        $args['appname'],
+                        $args['appbundleid'], 
 						$args['appversion'], 
 						$args['deviceuid'], 
 						$args['devicetoken'], 
@@ -260,9 +261,10 @@ class APNS {
  	 * @param sting $pushsound Whether Sound Pushing is Enabled or Disabled
      * @access private
      */	
-	private function _registerDevice($appname, $appversion, $deviceuid, $devicetoken, $devicename, $devicemodel, $deviceversion, $pushbadge, $pushalert, $pushsound){
+	private function _registerDevice($appname, $appbundleid, $appversion, $deviceuid, $devicetoken, $devicename, $devicemodel, $deviceversion, $pushbadge, $pushalert, $pushsound){
 		
 		if(strlen($appname)==0) $this->_triggerError('Application Name must not be blank.', E_USER_ERROR);
+		else if(strlen($appbundleid)==0) $this->_triggerError('Application Bundle ID must not be blank.', E_USER_ERROR);
 		else if(strlen($appversion)==0) $this->_triggerError('Application Version must not be blank.', E_USER_ERROR);
 		else if(strlen($deviceuid)!=40) $this->_triggerError('Device ID must be 40 characters in length.', E_USER_ERROR);
 		else if(strlen($devicetoken)!=64) $this->_triggerError('Device Token must be 64 characters in length.', E_USER_ERROR);
@@ -274,6 +276,7 @@ class APNS {
 		else if($pushsound!='disabled' && $pushsound!='enabled') $this->_triggerError('Push Sount must be either Enabled or Disabled.', E_USER_ERROR);
 		
 		$appname = $this->db->prepare($appname);
+		$appbundleid = $this->db->prepare($appbundleid);
 		$appversion = $this->db->prepare($appversion);
 		$deviceuid = $this->db->prepare($deviceuid);
 		$devicetoken = $this->db->prepare($devicetoken);
@@ -289,7 +292,8 @@ class APNS {
 		$sql = "INSERT INTO `apns_devices` 
 				VALUES (
 					NULL, 
-					'{$appname}', 
+                    '{$appname}', 
+                    '{$appbundleid}', 
 					'{$appversion}', 
 					'{$deviceuid}', 
 					'{$devicetoken}', 

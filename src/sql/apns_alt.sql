@@ -1,6 +1,7 @@
 CREATE TABLE `apns_devices` (
   `pid` int(9) unsigned NOT NULL auto_increment,
   `appname` varchar(255) NOT NULL,
+  `appbundleid` varchar(255) NOT NULL,
   `appversion` varchar(25) default NULL,
   `deviceuid` char(40) NOT NULL,
   `devicetoken` char(64) NOT NULL,

@@ -3,6 +3,7 @@ SET FOREIGN_KEY_CHECKS=0;
 CREATE TABLE `apns_device_history` (
   `pid` int(9) unsigned NOT NULL auto_increment,
   `appname` varchar(255) NOT NULL,
+  `appbundleid` varchar(255) NOT NULL,
   `appversion` varchar(25) default NULL,
   `deviceuid` char(40) NOT NULL,
   `devicetoken` char(64) NOT NULL,
@@ -34,6 +35,7 @@ CREATE TABLE `apns_device_history` (
 CREATE TABLE `apns_devices` (
   `pid` int(9) unsigned NOT NULL auto_increment,
   `appname` varchar(255) NOT NULL,
+  `appbundleid` varchar(255) NOT NULL,
   `appversion` varchar(25) default NULL,
   `deviceuid` char(40) NOT NULL,
   `devicetoken` char(64) NOT NULL,
