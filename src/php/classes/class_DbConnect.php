@@ -127,10 +127,13 @@ class DbConnect
 	*/
 	function __construct()
 	{
-		$this->DB_HOST     = 'localhost';
-		$this->DB_USERNAME = 'MYUSERNAME'; // !!! CHANGE ME
-		$this->DB_PASSWORD = 'MYPASSWORD'; // !!! CHANGE ME
-		$this->DB_DATABASE = 'MYDATABASE'; // !!! CHANGE ME
+        //Not the best way but works for now, until we can build a true config system
+        include("config/db.php");        
+        
+        $this->DB_HOST     = DB_HOST;
+        $this->DB_USERNAME = DB_USERNAME;
+        $this->DB_PASSWORD = DB_PASSWORD;
+        $this->DB_DATABASE = DB_DATABASE;
 	}
 	
 	/**

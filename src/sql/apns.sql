@@ -3,7 +3,6 @@ SET FOREIGN_KEY_CHECKS=0;
 CREATE TABLE `apns_device_history` (
   `pid` int(9) unsigned NOT NULL auto_increment,
   `appname` varchar(255) NOT NULL,
-  `appbundleid` varchar(255) NOT NULL,
   `appversion` varchar(25) default NULL,
   `deviceuid` char(40) NOT NULL,
   `devicetoken` char(64) NOT NULL,
@@ -35,7 +34,6 @@ CREATE TABLE `apns_device_history` (
 CREATE TABLE `apns_devices` (
   `pid` int(9) unsigned NOT NULL auto_increment,
   `appname` varchar(255) NOT NULL,
-  `appbundleid` varchar(255) NOT NULL,
   `appversion` varchar(25) default NULL,
   `deviceuid` char(40) NOT NULL,
   `devicetoken` char(64) NOT NULL,
@@ -64,7 +62,6 @@ CREATE TABLE `apns_devices` (
   KEY `modified` (`modified`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='Store unique devices';
 
-DELIMITER ;;
 CREATE TRIGGER `Archive` BEFORE UPDATE ON `apns_devices` FOR EACH ROW INSERT INTO `apns_device_history` VALUES (
 	NULL,
 	OLD.`appname`,
@@ -80,8 +77,7 @@ CREATE TRIGGER `Archive` BEFORE UPDATE ON `apns_devices` FOR EACH ROW INSERT INT
 	OLD.`development`,
 	OLD.`status`,
 	NOW()
-);;
-DELIMITER ;
+);
 
 CREATE TABLE `apns_messages` (
   `pid` int(9) unsigned NOT NULL auto_increment,
