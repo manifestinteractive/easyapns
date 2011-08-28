@@ -519,7 +519,11 @@ class APNS {
 	 * @return string
      */	
 	private function _jsonEncode($array=false){
-		if(is_null($array)) return 'null';
+		//Using json_encode if exists
+		if(function_exists('json_encode')){
+			return json_encode($array);
+		}
+                if(is_null($array)) return 'null';
 		if($array === false) return 'false';
 		if($array === true) return 'true';
 		if(is_scalar($array)){
@@ -541,11 +545,11 @@ class APNS {
 		}
 		$result = array();
 		if($isList){
-			foreach($array as $v) $result[] = json_encode($v);
+			foreach($array as $v) $result[] = $this->_jsonEncode($v);
 			return '[' . join(',', $result) . ']';
 		}
 		else {
-			foreach ($array as $k => $v) $result[] = json_encode($k).':'.json_encode($v);
+			foreach ($array as $k => $v) $result[] = $this->_jsonEncode($k).':'.$this->_jsonEncode($v);
 			return '{' . join(',', $result) . '}';
 		}
 	}
