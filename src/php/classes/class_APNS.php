@@ -32,7 +32,7 @@
  */
 
 class APNS {
-	
+
 	/**
 	* Connection to MySQL
 	*
@@ -40,7 +40,7 @@ class APNS {
 	* @access private
 	*/
 	private $db;
-	
+
 	/**
 	* Array of APNS Connection Settings
 	*
@@ -48,7 +48,7 @@ class APNS {
 	* @access private
 	*/
 	private $apnsData;
-	
+
 	/**
 	* Whether to trigger errors
 	*
@@ -56,7 +56,7 @@ class APNS {
 	* @access private
 	*/
 	private $showErrors = true;
-	
+
 	/**
 	* Whether APNS should log errors
 	*
@@ -64,7 +64,7 @@ class APNS {
 	* @access private
 	*/
 	private $logErrors = true;
-	
+
 	/**
 	* Log path for APNS errors
 	*
@@ -72,7 +72,7 @@ class APNS {
 	* @access private
 	*/
 	private $logPath = '/usr/local/apns/apns.log';
-	
+
 	/**
 	* Max files size of log before it is truncated. 1048576 = 1MB.  Added incase you do not add to a log
 	* rotator so this script will not accidently make gigs of error logs if there are issues with install
@@ -81,7 +81,7 @@ class APNS {
 	* @access private
 	*/
 	private $logMaxSize = 1048576; // max log size before it is truncated
-	
+
 	/**
 	* Absolute path to your Production Certificate
 	*
@@ -89,7 +89,7 @@ class APNS {
 	* @access private
 	*/
 	private $certificate = '/usr/local/apns/apns.pem';
-	
+
 	/**
 	* Apples Production APNS Gateway
 	*
@@ -97,7 +97,7 @@ class APNS {
 	* @access private
 	*/
 	private $ssl = 'ssl://gateway.push.apple.com:2195';
-	
+
 	/**
 	* Apples Production APNS Feedback Service
 	*
@@ -105,7 +105,7 @@ class APNS {
 	* @access private
 	*/
 	private $feedback = 'ssl://feedback.push.apple.com:2196';
-	
+
 	/**
 	* Absolute path to your Development Certificate
 	*
@@ -113,7 +113,7 @@ class APNS {
 	* @access private
 	*/
 	private $sandboxCertificate = '/usr/local/apns/apns-dev.pem'; // change this to your development certificate absolute path
-	
+
 	/**
 	* Apples Sandbox APNS Gateway
 	*
@@ -121,7 +121,7 @@ class APNS {
 	* @access private
 	*/
 	private $sandboxSsl = 'ssl://gateway.sandbox.push.apple.com:2195';
-	
+
 	/**
 	* Apples Sandbox APNS Feedback Service
 	*
@@ -129,7 +129,7 @@ class APNS {
 	* @access private
 	*/
 	private $sandboxFeedback = 'ssl://feedback.sandbox.push.apple.com:2196';
-	
+
 	/**
 	* Message to push to user
 	*
@@ -139,7 +139,7 @@ class APNS {
 	private $message;
 
 	/**
-	 * Constructor. 
+	 * Constructor.
 	 *
 	 * Initializes a database connection and perfoms any tasks that have been assigned.
 	 *
@@ -165,34 +165,34 @@ class APNS {
 	 *
 	 * Your iPhone App Delegate.m file will point to a PHP file with this APNS Object.  The url will end up looking something like:
 	 * https://secure.yourwebsite.com/apns.php?task=register&appname=My%20App&appversion=1.0.1&deviceuid=e018c2e46efe185d6b1107aa942085a59bb865d9&devicetoken=43df9e97b09ef464a6cf7561f9f339cb1b6ba38d8dc946edd79f1596ac1b0f66&devicename=My%20Awesome%20iPhone&devicemodel=iPhone&deviceversion=3.1.2&pushbadge=enabled&pushalert=disabled&pushsound=enabled
-     *
-     * @param object $db Database Object
+	 *
+	 * @param object $db Database Object
 	 * @param array $args Optional arguments passed through $argv or $_GET
-     * @access 	public
-     */	
+	 * @access 	public
+	 */
 	function __construct($db, $args=NULL, $certificate=NULL, $sandboxCertificate=NULL) {
-		
+
 		if(!empty($certificate) && file_exists($certificate))
 		{
 			$this->certificate = $certificate;
 		}
-		
+
 		if(!empty($sandboxCertificate) && file_exists($sandboxCertificate))
 		{
 			$this->sandboxCertificate = $sandboxCertificate;
 		}
-		
+
 		$this->db = $db;
 		$this->checkSetup();
 		$this->apnsData = array(
 			'production'=>array(
-				'certificate'=>$this->certificate, 
-				'ssl'=>$this->ssl, 
+				'certificate'=>$this->certificate,
+				'ssl'=>$this->ssl,
 				'feedback'=>$this->feedback
-			), 
+			),
 			'sandbox'=>array(
-				'certificate'=>$this->sandboxCertificate, 
-				'ssl'=>$this->sandboxSsl, 
+				'certificate'=>$this->sandboxCertificate,
+				'ssl'=>$this->sandboxSsl,
 				'feedback'=>$this->sandboxFeedback
 			)
 		);
@@ -200,68 +200,70 @@ class APNS {
 			switch($args['task']){
 				case "register":
 					$this->_registerDevice(
-						$args['appname'], 
-						$args['appversion'], 
-						$args['deviceuid'], 
-						$args['devicetoken'], 
-						$args['devicename'], 
+						$args['appname'],
+						$args['appversion'],
+						$args['deviceuid'],
+						$args['devicetoken'],
+						$args['devicename'],
 						$args['devicemodel'],
 						$args['deviceversion'],
 						$args['pushbadge'],
 						$args['pushalert'],
-						$args['pushsound']
+						$args['pushsound'],
+						$args['clientid']
 					);
 					break;
-					
+
 				case "fetch";
 					$this->_fetchMessages();
 					break;
-					
+
 				default:
 					echo "No APNS Task Provided...\n";
 					break;
 			}
 		}
 	}
-	
+
 	/**
 	 * Check Setup
 	 *
 	 * Check to make sure that the certificates are available and also provide a notice if they are not as secure as they could be.
 	 *
-     * @access private
-     */	
+	 * @access private
+	 */
 	private function checkSetup(){
 		if(!file_exists($this->certificate)) $this->_triggerError('Missing Production Certificate.', E_USER_ERROR);
 		if(!file_exists($this->sandboxCertificate)) $this->_triggerError('Missing Sandbox Certificate.', E_USER_ERROR);
-		
+
 		clearstatcache();
-    	$certificateMod = substr(sprintf('%o', fileperms($this->certificate)), -3);
-		$sandboxCertificateMod = substr(sprintf('%o', fileperms($this->sandboxCertificate)), -3); 
-		
+		$certificateMod = substr(sprintf('%o', fileperms($this->certificate)), -3);
+		$sandboxCertificateMod = substr(sprintf('%o', fileperms($this->sandboxCertificate)), -3);
+
 		if($certificateMod>644)  $this->_triggerError('Production Certificate is insecure! Suggest chmod 644.');
 		if($sandboxCertificateMod>644)  $this->_triggerError('Sandbox Certificate is insecure! Suggest chmod 644.');
 	}
-	
+
 	/**
 	 * Register Apple device
 	 *
 	 * Using your Delegate file to auto register the device on application launch.  This will happen automatically from the Delegate.m file in your iPhone Application using our code.
 	 *
-	 * @param sting $appname Application Name
-	 * @param sting $appversion Application Version
-	 * @param sting $deviceuid 40 charater unique user id of Apple device
-	 * @param sting $devicetoken 64 character unique device token tied to device id
-	 * @param sting $devicename User selected device name
-	 * @param sting $devicemodel Modle of device 'iPhone' or 'iPod'
-	 * @param sting $deviceversion Current version of device
-	 * @param sting $pushbadge Whether Badge Pushing is Enabled or Disabled
- 	 * @param sting $pushalert Whether Alert Pushing is Enabled or Disabled
- 	 * @param sting $pushsound Whether Sound Pushing is Enabled or Disabled
-     * @access private
-     */	
-	private function _registerDevice($appname, $appversion, $deviceuid, $devicetoken, $devicename, $devicemodel, $deviceversion, $pushbadge, $pushalert, $pushsound){
-		
+	 * @param string $appname Application Name
+	 * @param string $appversion Application Version
+	 * @param string $deviceuid 40 charater unique user id of Apple device
+	 * @param string $devicetoken 64 character unique device token tied to device id
+	 * @param string $devicename User selected device name
+	 * @param string $devicemodel Modle of device 'iPhone' or 'iPod'
+	 * @param string $deviceversion Current version of device
+	 * @param string $pushbadge Whether Badge Pushing is Enabled or Disabled
+ 	 * @param string $pushalert Whether Alert Pushing is Enabled or Disabled
+ 	 * @param string $pushsound Whether Sound Pushing is Enabled or Disabled
+ 	 * @param string $clientid The clientid of the app for message grouping
+	 * @access private
+	 */
+	private function _registerDevice($appname, $appversion, $deviceuid, $devicetoken, $devicename, $devicemodel, $deviceversion, $pushbadge, $pushalert, $pushsound, $clientid = NULL){
+
 		if(strlen($appname)==0) $this->_triggerError('Application Name must not be blank.', E_USER_ERROR);
 		else if(strlen($appversion)==0) $this->_triggerError('Application Version must not be blank.', E_USER_ERROR);
 		else if(strlen($deviceuid)!=40) $this->_triggerError('Device ID must be 40 characters in length.', E_USER_ERROR);
@@ -272,7 +274,7 @@ class APNS {
 		else if($pushbadge!='disabled' && $pushbadge!='enabled') $this->_triggerError('Push Badge must be either Enabled or Disabled.', E_USER_ERROR);
 		else if($pushalert!='disabled' && $pushalert!='enabled') $this->_triggerError('Push Alert must be either Enabled or Disabled.', E_USER_ERROR);
 		else if($pushsound!='disabled' && $pushsound!='enabled') $this->_triggerError('Push Sount must be either Enabled or Disabled.', E_USER_ERROR);
-		
+
 		$appname = $this->db->prepare($appname);
 		$appversion = $this->db->prepare($appversion);
 		$deviceuid = $this->db->prepare($deviceuid);
@@ -283,16 +285,18 @@ class APNS {
 		$pushbadge = $this->db->prepare($pushbadge);
 		$pushalert = $this->db->prepare($pushalert);
 		$pushsound = $this->db->prepare($pushsound);
-		
+		$clientid = $this->db->prepare($clientid);
+
 		// store device for push notifications
 		$this->db->query("SET NAMES 'utf8';"); // force utf8 encoding if not your default
-		$sql = "INSERT INTO `apns_devices` 
+		$sql = "INSERT INTO `apns_devices`
 				VALUES (
-					NULL, 
-					'{$appname}', 
-					'{$appversion}', 
-					'{$deviceuid}', 
-					'{$devicetoken}', 
+					NULL,
+					'{$clientid}',
+					'{$appname}',
+					'{$appversion}',
+					'{$deviceuid}',
+					'{$devicetoken}',
 					'{$devicename}',
 					'{$devicemodel}',
 					'{$deviceversion}',
@@ -300,72 +304,63 @@ class APNS {
 					'{$pushalert}',
 					'{$pushsound}',
 					'production',
-					'active', 
-					NOW(), 
+					'active',
+					NOW(),
 					NOW()
-				) 
-				ON DUPLICATE KEY UPDATE 
-				`devicetoken`='{$devicetoken}', 
-				`devicename`='{$devicename}', 
-				`devicemodel`='{$devicemodel}', 
-				`deviceversion`='{$deviceversion}', 
-				`pushbadge`='{$pushbadge}', 
-				`pushalert`='{$pushalert}', 
-				`pushsound`='{$pushsound}', 
-				`status`='active', 
-				`modified`=NOW();";		
-		$this->db->query($sql);		
+				)
+				ON DUPLICATE KEY UPDATE
+				`devicetoken`='{$devicetoken}',
+				`devicename`='{$devicename}',
+				`devicemodel`='{$devicemodel}',
+				`deviceversion`='{$deviceversion}',
+				`pushbadge`='{$pushbadge}',
+				`pushalert`='{$pushalert}',
+				`pushsound`='{$pushsound}',
+				`status`='active',
+				`modified`=NOW();";
+		$this->db->query($sql);
 	}
-	
+
 	/**
 	 * Unregister Apple device
 	 *
 	 * This gets called automatically when Apple's Feedback Service responds with an invalid token.
 	 *
-	 * @param sting $token 64 character unique device token tied to device id
-     * @access private
-     */	
+	 * @param string $token 64 character unique device token tied to device id
+	 * @access private
+	 */
 	private function _unregisterDevice($token){
-		$sql = "UPDATE `apns_devices` 
-				SET `status`='uninstalled' 
-				WHERE `devicetoken`='{$token}' 
+		$sql = "UPDATE `apns_devices`
+				SET `status`='uninstalled'
+				WHERE `devicetoken`='{$token}'
 				LIMIT 1;";
 		$this->db->query($sql);
 	}
-	
+
 	/**
 	 * Fetch Messages
 	 *
 	 * This gets called by a cron job that runs as often as you want.  You might want to set it for every minute.
 	 *
-	 * @param sting $token 64 character unique device token tied to device id
-     * @access private
-     */	
+	 * @param string $token 64 character unique device token tied to device id
+	 * @access private
+	 */
 	private function _fetchMessages(){
 		// only send one message per user... oldest message first
-		$sql = "SELECT 
+		$sql = "SELECT
 				`apns_messages`.`pid`,
-				`apns_messages`.`message`, 
+				`apns_messages`.`message`,
 				`apns_devices`.`devicetoken`,
 				`apns_devices`.`development`
-				
-				FROM `apns_messages` 
-				
-				LEFT JOIN `apns_devices` ON
-				`apns_devices`.`pid` = `apns_messages`.`fk_device`
-				
-				WHERE `apns_messages`.`status`='queued'
-				
-				AND `apns_messages`.`delivery` <= NOW() 
-				
+			FROM `apns_messages`
+			LEFT JOIN `apns_devices` ON (`apns_devices`.`pid` = `apns_messages`.`fk_device` AND `apns_devices`.`clientid` = `apns_messages`.`clientid`)
+			WHERE `apns_messages`.`status`='queued'
+				AND `apns_messages`.`delivery` <= NOW()
 				AND `apns_devices`.`status`='active'
-				
-				GROUP BY `apns_messages`.`fk_device`
-				
-				ORDER BY `apns_messages`.`created` ASC
-				
-				LIMIT 100;";
-				
+			GROUP BY `apns_messages`.`fk_device`
+			ORDER BY `apns_messages`.`created` ASC
+			LIMIT 100;";
+
 		if($result = $this->db->query($sql)){
 			if($result->num_rows){
 				while($row = $result->fetch_array(MYSQLI_ASSOC)){
@@ -375,31 +370,31 @@ class APNS {
 					$development = $this->db->prepare($row['development']);
 					$this->_pushMessage($pid, $message, $token, $development);
 				}
-			} 
+			}
 		}
 	}
-	
+
 	/**
 	 * Push APNS Messages
 	 *
 	 * This gets called automatically by _fetchMessages.  This is what actually deliveres the message.
 	 *
-	 * @param int $pid 
-	 * @param sting $message JSON encoded string
-	 * @param sting $token 64 character unique device token tied to device id
-	 * @param sting $development Which SSL to connect to, Sandbox or Production
-     * @access private
-     */	
+	 * @param int $pid
+	 * @param string $message JSON encoded string
+	 * @param string $token 64 character unique device token tied to device id
+	 * @param string $development Which SSL to connect to, Sandbox or Production
+	 * @access private
+	 */
 	private function _pushMessage($pid, $message, $token, $development){
 		if(strlen($pid)==0) $this->_triggerError('Missing message pid.', E_USER_ERROR);
 		if(strlen($message)==0) $this->_triggerError('Missing message.', E_USER_ERROR);
 		if(strlen($token)==0) $this->_triggerError('Missing message token.', E_USER_ERROR);
 		if(strlen($development)==0) $this->_triggerError('Missing development status.', E_USER_ERROR);
-		
+
 		$ctx = stream_context_create();
 		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
 		$fp = stream_socket_client($this->apnsData[$development]['ssl'], $error, $errorString, 60, STREAM_CLIENT_CONNECT, $ctx);
-		
+
 		if(!$fp){
 			$this->_pushFailed($pid);
 			$this->_triggerError("Failed to connect to APNS: {$error} {$errorString}.");
@@ -412,28 +407,28 @@ class APNS {
 				$this->_triggerError("Failed writing to stream.", E_USER_ERROR);
 			}
 			else {
-				$this->_pushSuccess($pid);	
+				$this->_pushSuccess($pid);
 			}
 		}
 		fclose($fp);
-		
+
 		$this->_checkFeedback($development);
 	}
-	
+
 	/**
 	 * Fetch APNS Messages
 	 *
 	 * This gets called automatically by _pushMessage.  This will check with APNS for any invalid tokens and disable them from receiving further notifications.
 	 *
-	 * @param sting $development Which SSL to connect to, Sandbox or Production
-     * @access private
-     */	
+	 * @param string $development Which SSL to connect to, Sandbox or Production
+	 * @access private
+	 */
 	private function _checkFeedback($development){
 		$ctx = stream_context_create();
 		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
 		stream_context_set_option($ctx, 'ssl', 'verify_peer', false);
 		$fp = stream_socket_client($this->apnsData[$development]['feedback'], $error, $errorString, 60, STREAM_CLIENT_CONNECT, $ctx);
-		
+
 		if(!$fp) $this->_triggerError("Failed to connect to device: {$error} {$errorString}.");
 		while ($devcon = fread($fp, 38)){
 			$arr = unpack("H*", $devcon);
@@ -446,49 +441,49 @@ class APNS {
 		}
 		fclose($fp);
 	}
-	
+
 	/**
 	 * APNS Push Success
 	 *
 	 * This gets called automatically by _pushMessage.  When no errors are present, then the message was delivered.
 	 *
 	 * @param int $pid Primary ID of message that was delivered
-     * @access private
-     */	
+	 * @access private
+	 */
 	private function _pushSuccess($pid){
-		$sql = "UPDATE `apns_messages` 
-				SET `status`='delivered' 
-				WHERE `pid`={$pid} 
+		$sql = "UPDATE `apns_messages`
+				SET `status`='delivered'
+				WHERE `pid`={$pid}
 				LIMIT 1;";
 		$this->db->query($sql);
 	}
-	
+
 	/**
 	 * APNS Push Failed
 	 *
 	 * This gets called automatically by _pushMessage.  If an error is present, then the message was NOT delivered.
 	 *
 	 * @param int $pid Primary ID of message that was delivered
-     * @access private
-     */	
+	 * @access private
+	 */
 	private function _pushFailed($pid){
-		$sql = "UPDATE `apns_messages` 
-				SET `status`='failed' 
-				WHERE `pid`={$pid} 
+		$sql = "UPDATE `apns_messages`
+				SET `status`='failed'
+				WHERE `pid`={$pid}
 				LIMIT 1;";
 		$this->db->query($sql);
 	}
-	
+
 	/**
 	 * Trigger Error
 	 *
-	 * Use PHP error handling to trigger User Errors or Notices.  If logging is enabled, errors will be written to the log as well. 
+	 * Use PHP error handling to trigger User Errors or Notices.  If logging is enabled, errors will be written to the log as well.
 	 * Disable on screen errors by setting showErrors to false;
 	 *
 	 * @param string $error Error String
 	 * @param int $type Type of Error to Trigger
-     * @access private
-     */	
+	 * @access private
+	 */
 	private function _triggerError($error, $type=E_USER_NOTICE){
 		$backtrace = debug_backtrace();
 		$backtrace = array_reverse($backtrace);
@@ -508,16 +503,16 @@ class APNS {
 		}
 		if($this->showErrors) trigger_error($error, $type);
 	}
-	
+
 	/**
 	 * JSON Encode
 	 *
 	 * Some servers do not have json_encode, so use this instead.
 	 *
 	 * @param array $array Data to convert to JSON string.
-     * @access private
+	 * @access private
 	 * @return string
-     */	
+	 */
 	private function _jsonEncode($array=false){
 		//Using json_encode if exists
 		if(function_exists('json_encode')){
@@ -553,7 +548,7 @@ class APNS {
 			return '{' . join(',', $result) . '}';
 		}
 	}
-	
+
 	/**
 	 * Start a New Message
 	 *
@@ -576,20 +571,38 @@ class APNS {
 	 *
 	 * @param mixed $fk_device Foreign Key, or Array of Foreign Keys to the device you want to send a message to.
 	 * @param string $delivery Possible future date to send the message.
-     * @access public
-     */	
-	public function newMessage($fk_device, $delivery=NULL){
-		if(strlen($fk_device)==0) $this->_triggerError('Missing message fk_device.', E_USER_ERROR);
+	 * @access public
+	 */
+	public function newMessage($fk_device=NULL, $delivery=NULL, $clientId=NULL){
 		if(isset($this->message)){
 			unset($this->message);
-			$this->_triggerError('An existing message already created but not delivered. The previous message has been removed. Use queueMessage() to complete a message.');
+			$this->_triggerError('An existring message already created but not delivered. The previous message has been removed. Use queueMessage() to complete a message.');
 		}
+
+		// If no device is specified then that means we sending a message to all.
+		if (is_null($fk_device))
+		{
+			$sql = "SELECT `pid` FROM `apns_devices` WHERE `status`='active'";
+
+			// Only to a set of client?
+			if (!is_null($clientId))
+				$sql .= " AND `clientid` = '{$this->db->prepare($clientId)}'";
+
+			$ids = array();
+			$result = $this->db->query($sql);
+			while ($row = $result->fetch_array(MYSQLI_ASSOC))
+				$ids[] = $row['pid'];
+
+			$fk_device = $ids;
+		}
+
 		$this->message = array();
 		$this->message['aps'] = array();
+		$this->message['aps']['clientid'] = $clientId;
 		$this->message['send']['to'] = $fk_device;
 		$this->message['send']['when'] = $delivery;
 	}
-	
+
 	/**
 	 * Queue Message for Delivery
 	 *
@@ -606,94 +619,109 @@ class APNS {
 	 * ?>
  	 * </code>
 	 *
-     * @access public
-     */	
+	 * @access public
+	 */
 	public function queueMessage(){
 		// check to make sure a message was created
-		if(!isset($this->message)) $this->_triggerError('You cannot Queue a message that has not been created. Use newMessage() to create a new message.');
-		
+		if (!isset($this->message))
+			$this->_triggerError('You cannot Queue a message that has not been created. Use newMessage() to create a new message.');
+
 		// loop through possible users
 		$to = $this->message['send']['to'];
 		$when = $this->message['send']['when'];
-		$list = (is_array($to)) ? $to:array($to);
+		$clientId = is_null($this->message['aps']['clientid']) ? null : $this->db->prepare($this->message['aps']['clientid']);
+		$list = (is_array($to)) ? $to : array($to);
 		unset($this->message['send']);
-		
-		for($i=0; $i<count($list); $i++){
-			
-			if(!is_int($list[$i])) $this->_triggerError('TO id was not an integer.');
-			else {
-				// fetch the users id and check to make sure they have certain notifications enabled before trying to send anything to them.
+
+		// Lets make sure that the recipients are integers. If not then just remove
+		foreach ($list as $key => $val)
+			if (!is_numeric($val)) {
+				$this->_triggerError("TO id was not an integer: $val.");
+				unset($list[$key]);
+			}
+
+		// No recipients left?
+		if (empty($list))
+			$this->_triggerError('No valid recipient was provided.');
+
+		// Get the devices.
+		// fetch the users id and check to make sure they have certain notifications enabled before trying to send anything to them.
+		$sql = "
+			SELECT `pid`, `pushbadge`, `pushalert`, `pushsound`
+			FROM `apns_devices`
+			WHERE `pid` IN (" . implode(', ', $list) . ")
+				AND `status`='active'" . (is_null($clientId) ? '' : "
+				AND `clientid` = '{$clientId}'");
+
+		$result = $this->db->query($sql);
+
+		if ($result->num_rows == 0)
+			$this->_triggerError('This user does not exist in the database. Message will not be delivered.');
+
+		while ($row = $result->fetch_array(MYSQLI_ASSOC))
+		{
+			$deliver = true;
+
+			// Device id.
+			$deviceid = $row['pid'];
+			// Get the push settings.
+			$pushbadge = $this->db->prepare($row['pushbadge']);
+			$pushalert = $this->db->prepare($row['pushalert']);
+			$pushsound = $this->db->prepare($row['pushsound']);
+
+			// has user disabled messages?
+			if($pushbadge=='disabled' && $pushalert=='disabled' && $pushsound=='disabled')
 				$deliver = false;
-				$sql = "SELECT `pushbadge`, `pushalert`, `pushsound` FROM `apns_devices` WHERE `pid`={$list[$i]} AND `status`='active' LIMIT 1;";
-				if($result = $this->db->query($sql)){
-					if($result->num_rows){
-						while($row = $result->fetch_array(MYSQLI_ASSOC)){
-							$pushbadge = $this->db->prepare($row['pushbadge']);
-							$pushalert = $this->db->prepare($row['pushalert']);
-							$pushsound = $this->db->prepare($row['pushsound']);
-						}
-						$deliver = true;
-					} 
+
+			if($deliver===false && $result->num_rows > 0) {
+				$this->_triggerError('This user has disabled all push notifications. Message will not be delivered.');
+			}
+			else if($deliver===true) {
+				// make temp copy of message so we can cut out stuff this user may not get
+				$usermessage = $this->message;
+
+				// only send badge if user will get it
+				if($pushbadge=='disabled'){
+					$this->_triggerError('This user has disabled Push Badge Notifications, Badge will not be delivered.');
+					unset($usermessage['aps']['badge']);
 				}
-				else {
-					$this->_triggerError('This user does not exist in the database. Message will not be delivered.');
+
+				// only send alert if user will get it
+				if($pushalert=='disabled'){
+					$this->_triggerError('This user has disabled Push Alert Notifications, Alert will not be delivered.');
+					unset($usermessage['aps']['alert']);
 				}
-				// has user disabled messages?
-				if($pushbadge=='disabled' && $pushalert=='disabled' && $pushsound=='disabled') {
-					$deliver = false;
+
+				// only send sound if user will get it
+				if($pushsound=='disabled'){
+					$this->_triggerError('This user has disabled Push Sound Notifications, Sound will not be delivered.');
+					unset($usermessage['aps']['sound']);
 				}
-				if($deliver===false && $result->num_rows > 0) {
-					$this->_triggerError('This user has disabled all push notifications. Message will not be delivered.');
-				}
-				else if($deliver===false && $result->num_rows==0){
-					$this->_triggerError('This user ('.$list[$i].') does not exist in the database. Message will not be delivered.');
-				}
-				else if($deliver===true) {
-					// make temp copy of message so we can cut out stuff this user may not get
-					$usermessage = $this->message;
-					
-					// only send badge if user will get it
-					if($pushbadge=='disabled'){
-						$this->_triggerError('This user has disabled Push Badge Notifications, Badge will not be delivered.');
-						unset($usermessage['aps']['badge']);
-					}
-					
-					// only send alert if user will get it
-					if($pushalert=='disabled'){
-						$this->_triggerError('This user has disabled Push Alert Notifications, Alert will not be delivered.');
-						unset($usermessage['aps']['alert']);
-					}
-					
-					// only send sound if user will get it
-					if($pushsound=='disabled'){
-						$this->_triggerError('This user has disabled Push Sound Notifications, Sound will not be delivered.');
-						unset($usermessage['aps']['sound']);
-					}
-					
-					$fk_device = $this->db->prepare($list[$i]);
-					$message = $this->_jsonEncode($usermessage);
-					$message = $this->db->prepare($message);
-					$delivery = (!empty($when)) ? "'{$when}'":'NOW()';
-					
-					$this->db->query("SET NAMES 'utf8';"); // force utf8 encoding if not your default
-					$sql = "INSERT INTO `apns_messages` 
-							VALUES (
-								NULL, 
-								'{$fk_device}', 
-								'{$message}', 
-								{$delivery},
-								'queued',
-								NOW(),
-								NOW()
-							);";
-					$this->db->query($sql);
-					unset($usermessage);
-				}
+
+				$fk_device = $this->db->prepare($deviceid);
+				$message = $this->_jsonEncode($usermessage);
+				$message = $this->db->prepare($message);
+				$delivery = (!empty($when)) ? "'{$when}'":'NOW()';
+
+				$this->db->query("SET NAMES 'utf8';"); // force utf8 encoding if not your default
+				$sql = "INSERT INTO `apns_messages`
+						VALUES (
+							NULL,
+							'{$clientId}',
+							'{$fk_device}',
+							'{$message}',
+							{$delivery},
+							'queued',
+							NOW(),
+							NOW()
+						);";
+				$this->db->query($sql);
+				unset($usermessage);
 			}
 		}
 		unset($this->message);
 	}
-	
+
 	/**
 	 * Add Message Alert
 	 *
@@ -726,39 +754,39 @@ class APNS {
  	 * </code>
 	 *
 	 * @param int $number
-     * @access public
-     */
+	 * @access public
+	 */
 	public function addMessageAlert($alert=NULL, $actionlockey=NULL, $lockey=NULL, $locargs=NULL){
 		if(!$this->message) $this->_triggerError('Must use newMessage() before calling this method.', E_USER_ERROR);
 		if(isset($this->message['aps']['alert'])){
 			unset($this->message['aps']['alert']);
-			$this->_triggerError('An existing alert was already created but not delivered. The previous alert has been removed.');
+			$this->_triggerError('An existring alert was already created but not delivered. The previous alert has been removed.');
 		}
 		switch(true){
 			case (!empty($alert) && empty($actionlockey) && empty($lockey) && empty($locargs)):
 				if(!is_string($alert)) $this->_triggerError('Invalid Alert Format. See documentation for correct procedure.', E_USER_ERROR);
 				$this->message['aps']['alert'] = (string)$alert;
 				break;
-				
+
 			case (!empty($alert) && !empty($actionlockey) && empty($lockey) && empty($locargs)):
 				if(!is_string($alert)) $this->_triggerError('Invalid Alert Format. See documentation for correct procedure.', E_USER_ERROR);
 				else if(!is_string($actionlockey)) $this->_triggerError('Invalid Action Loc Key Format. See documentation for correct procedure.', E_USER_ERROR);
 				$this->message['aps']['alert']['body'] = (string)$alert;
 				$this->message['aps']['alert']['action-loc-key'] = (string)$actionlockey;
 				break;
-				
+
 			case (empty($alert) && empty($actionlockey) && !empty($lockey) && !empty($locargs)):
 				if(!is_string($lockey)) $this->_triggerError('Invalid Loc Key Format. See documentation for correct procedure.', E_USER_ERROR);
 				$this->message['aps']['alert']['loc-key'] = (string)$lockey;
 				$this->message['aps']['alert']['loc-args'] = $locargs;
 				break;
-				
+
 			default:
 				$this->_triggerError('Invalid Alert Format. See documentation for correct procedure.', E_USER_ERROR);
 				break;
 		}
 	}
-	
+
 	/**
 	 * Add Message Badge
 	 *
@@ -774,8 +802,8 @@ class APNS {
  	 * </code>
 	 *
 	 * @param int $number
-     * @access public
-     */	
+	 * @access public
+	 */
 	public function addMessageBadge($number=NULL){
 		if(!$this->message) $this->_triggerError('Must use newMessage() before calling this method.', E_USER_ERROR);
 		if($number) {
@@ -783,7 +811,7 @@ class APNS {
 			$this->message['aps']['badge'] = (int)$number;
 		}
 	}
-	
+
 	/**
 	 * Add Message Custom
 	 *
@@ -802,8 +830,8 @@ class APNS {
 	 *
 	 * @param string $key Name of Custom Object you want to pass back to your iPhone App
 	 * @param mixed $value Mixed Value you want to pass back.  Can be int, bool, string, or array.
-     * @access public
-     */	
+	 * @access public
+	 */
 	public function addMessageCustom($key=NULL, $value=NULL){
 		if(!$this->message) $this->_triggerError('Must use newMessage() before calling this method.', E_USER_ERROR);
 		if(!empty($key) && !empty($value)) {
@@ -815,7 +843,7 @@ class APNS {
 			$this->message[$key] = $value;
 		}
 	}
-	
+
 	/**
 	 * Add Message Sound
 	 *
@@ -831,16 +859,16 @@ class APNS {
  	 * </code>
 	 *
 	 * @param string $sound Name of sound file in your Resources Directory
-     * @access public
-     */	
+	 * @access public
+	 */
 	public function addMessageSound($sound=NULL){
 		if(!$this->message) $this->_triggerError('Must use newMessage() before calling this method.', E_USER_ERROR);
 		if($sound) {
 			if(isset($this->message['aps']['sound'])) $this->_triggerError('Message Sound has already been created. Overwriting with '.$sound.'.');
 			$this->message['aps']['sound'] = (string)$sound;
 		}
-	}	
-	
+	}
+
 	/**
 	 * Process all queued messages
 	 *
@@ -856,8 +884,8 @@ class APNS {
 	 * ?>
  	 * </code>
 	 *
-     * @access public
-     */	
+	 * @access public
+	 */
 	public function processQueue(){
 		$this->_fetchMessages();
 	}

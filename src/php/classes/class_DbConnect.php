@@ -89,21 +89,21 @@ class DbConnect
 	* @var boolean
 	*/
 	var $show_errors = false;
-	
+
 	/**
 	* Log errors? If set to true, the error message/sql is logged.
 	*
 	* @var boolean
 	*/
 	public $log_errors = false;
-	
+
 	/**
 	* The Database.
 	*
 	* @var string
 	*/
 	public $DB_DATABASE;
-	
+
 	/**
 	* The variable used to contain a singleton instance of the database connection.
 	*
@@ -117,7 +117,7 @@ class DbConnect
 	* @var string
 	*/
 	public $affected_rows;
-	
+
 	public $insert_id;
 
 
@@ -132,7 +132,7 @@ class DbConnect
 		$this->DB_PASSWORD = 'MYPASSWORD'; // !!! CHANGE ME
 		$this->DB_DATABASE = 'MYDATABASE'; // !!! CHANGE ME
 	}
-	
+
 	/**
 	* Singleton pattern to retrieve database connection.
 	*
@@ -144,12 +144,12 @@ class DbConnect
 		{
 			self::$instance = $this->connect();
 		}
-		
+
 		return self::$instance->$property;
-		
+
 	}
-	
-	
+
+
 	/**
 	* Singleton pattern to retrieve database connection.
 	*
@@ -172,11 +172,11 @@ class DbConnect
 	function connect()
 	{
 		self::$instance = new mysqli($this->DB_HOST, $this->DB_USERNAME, $this->DB_PASSWORD, $this->DB_DATABASE);
-		
+
 		if (mysqli_connect_errno()) {
 			$this->raise_error(printf("Connect failed: %s\n", mysqli_connect_error()));
 		}
-		
+
 		return self::$instance;
 	}
 
@@ -195,15 +195,15 @@ class DbConnect
 		{
 			self::$instance = $this->connect();
 		}
-	
+
 		$this->recent_link =& self::$instance;
 		$this->sql =& $sql;
-		
+
 		if(!$result = self::$instance->query($sql))
 		{
 			$this->raise_error(printf("Connect failed: %s\n", self::$instance->error));
 		}
-		
+
 		$this->affected_rows = self::$instance->affected_rows;
 		$this->insert_id = self::$instance->insert_id;
 		$this->query_count++;
@@ -248,7 +248,7 @@ class DbConnect
 	{
 		return self::$instance->affected_rows;
 	}
-	
+
 
 	/**
 	* Returns the number of queries executed.
@@ -373,7 +373,7 @@ class DbConnect
 	*/
 	function error()
 	{
-		$this->error = (is_null($this->recent_link)) ? '' : self::$instance->error;	
+		$this->error = (is_null($this->recent_link)) ? '' : self::$instance->error;
 		return $this->error;
 	}
 

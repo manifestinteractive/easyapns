@@ -1,5 +1,6 @@
 CREATE TABLE `apns_devices` (
   `pid` int(9) unsigned NOT NULL auto_increment,
+  `clientid` varchar(64) NOT NULL,
   `appname` varchar(255) NOT NULL,
   `appversion` varchar(25) default NULL,
   `deviceuid` char(40) NOT NULL,
@@ -16,6 +17,7 @@ CREATE TABLE `apns_devices` (
   `modified` timestamp NOT NULL default '0000-00-00 00:00:00' on update CURRENT_TIMESTAMP,
   PRIMARY KEY  (`pid`),
   UNIQUE KEY `appname` (`appname`,`appversion`,`deviceuid`),
+  KEY `clientid` (`clientid`),
   KEY `devicetoken` (`devicetoken`),
   KEY `devicename` (`devicename`),
   KEY `devicemodel` (`devicemodel`),
@@ -31,6 +33,7 @@ CREATE TABLE `apns_devices` (
 
 CREATE TABLE `apns_messages` (
   `pid` int(9) unsigned NOT NULL auto_increment,
+  `clientid` varchar(64) NOT NULL,
   `fk_device` int(9) unsigned NOT NULL,
   `message` varchar(255) NOT NULL,
   `delivery` datetime NOT NULL,
@@ -38,6 +41,7 @@ CREATE TABLE `apns_messages` (
   `created` datetime NOT NULL,
   `modified` timestamp NOT NULL default '0000-00-00 00:00:00' on update CURRENT_TIMESTAMP,
   PRIMARY KEY  (`pid`),
+  KEY `clientid` (`clientid`),
   KEY `fk_device` (`fk_device`),
   KEY `status` (`status`),
   KEY `created` (`created`),
