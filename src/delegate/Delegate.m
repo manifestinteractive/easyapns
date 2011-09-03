@@ -47,11 +47,13 @@
 		if (uuid)
 			deviceUuid = (NSString *)uuid;
 		else {
-			deviceUuid = (NSString *)CFUUIDCreateString(NULL, CFUUIDCreate(NULL));
+			CFStringRef cfUuid = CFUUIDCreateString(NULL, CFUUIDCreate(NULL))
+			deviceUuid = (NSString *)cfUuid;
+			CFRelease(cfUuid);
 			[defaults setObject:deviceUuid forKey:@"deviceUuid"];
 		}
 	}
-    NSString *deviceName = [dev.name stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
+	NSString *deviceName = [dev.name stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
 	NSString *deviceModel = [dev.model stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
 	NSString *deviceSystemVersion = dev.systemVersion;
 	
