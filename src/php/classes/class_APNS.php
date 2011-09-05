@@ -393,7 +393,8 @@ class APNS {
 
 		$ctx = stream_context_create();
 		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
-		$fp = stream_socket_client($this->apnsData[$development]['ssl'], $error, $errorString, 60, STREAM_CLIENT_CONNECT, $ctx);
+		$fp = stream_socket_client($this->apnsData[$development]['ssl'], $error, $errorString, 100, (STREAM_CLIENT_CONNECT|STREAM_CLIENT_PERSISTENT), $ctx);
+
 
 		if(!$fp){
 			$this->_pushFailed($pid);
@@ -427,7 +428,7 @@ class APNS {
 		$ctx = stream_context_create();
 		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
 		stream_context_set_option($ctx, 'ssl', 'verify_peer', false);
-		$fp = stream_socket_client($this->apnsData[$development]['feedback'], $error, $errorString, 60, STREAM_CLIENT_CONNECT, $ctx);
+		$fp = stream_socket_client($this->apnsData[$development]['feedback'], $error,$errorString, 100, (STREAM_CLIENT_CONNECT|STREAM_CLIENT_PERSISTENT), $ctx);
 
 		if(!$fp) $this->_triggerError("Failed to connect to device: {$error} {$errorString}.");
 		while ($devcon = fread($fp, 38)){
