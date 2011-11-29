@@ -47,7 +47,7 @@
 		if (uuid)
 			deviceUuid = (NSString *)uuid;
 		else {
-			CFStringRef cfUuid = CFUUIDCreateString(NULL, CFUUIDCreate(NULL))
+			CFStringRef cfUuid = CFUUIDCreateString(NULL, CFUUIDCreate(NULL));
 			deviceUuid = (NSString *)cfUuid;
 			CFRelease(cfUuid);
 			[defaults setObject:deviceUuid forKey:@"deviceUuid"];
