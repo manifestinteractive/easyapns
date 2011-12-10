@@ -124,13 +124,17 @@ class DbConnect
 
 	/**
 	* Constructor. Initializes a database connection and selects our database.
+	* @param string $host		The host to wchich to connect.
+	* @param string $username	The name of the user used to login to the database.
+	* @param string $password	The password of the user to login to the database.
+	* @param string $database	The name of the database to which to connect.
 	*/
-	function __construct()
+	function __construct($host, $username, $password, $database)
 	{
-		$this->DB_HOST     = 'localhost';
-		$this->DB_USERNAME = 'MYUSERNAME'; // !!! CHANGE ME
-		$this->DB_PASSWORD = 'MYPASSWORD'; // !!! CHANGE ME
-		$this->DB_DATABASE = 'MYDATABASE'; // !!! CHANGE ME
+		$this->DB_HOST     = $host;
+		$this->DB_USERNAME = $username;
+		$this->DB_PASSWORD = $password;
+		$this->DB_DATABASE = $database;
 	}
 
 	/**

@@ -39,8 +39,8 @@ if(!function_exists("__autoload")){
 	}
 }
 
-// CREATE DATABASE OBJECT ( MAKE SURE TO CHANGE LOGIN INFO IN CLASS FILE )
-$db = new DbConnect();
+// CREATE DATABASE OBJECT ( MAKE SURE TO CHANGE LOGIN INFO )
+$db = new DbConnect('localhost', 'apnsuser', 'apnspassword', 'apnsdb');
 $db->show_errors();
 
 // FETCH $_GET OR CRON ARGUMENTS TO AUTOMATE TASKS
