@@ -199,6 +199,9 @@ class APNS {
 				'feedback'=>$this->sandboxFeedback
 			)
 		);
+		if ($logPath !== null) {
+			$this->logPath = $logPath;
+		}
 		if(!empty($args)){
 			switch($args['task']){
 				case "register":
