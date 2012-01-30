@@ -75,7 +75,7 @@
 	
 	// Register the Device Data
 	// !!! CHANGE "http" TO "https" IF YOU ARE USING HTTPS PROTOCOL
-	NSURL *url = [[NSURL alloc] initWithScheme:@"http" host:host path:urlString];
+	NSURL *url = [[NSURL alloc] initWithScheme:@"http" host:host path:[urlString stringByAddingPercentEscapesUsingEncoding:NSASCIIStringEncoding]];
     NSURLRequest *request = [[NSURLRequest alloc] initWithURL:url];
 	NSData *returnData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:nil];
 	NSLog(@"Register URL: %@", url);
