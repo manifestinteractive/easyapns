@@ -53,8 +53,8 @@
 			[defaults setObject:deviceUuid forKey:@"deviceUuid"];
 		}
 	}
-	NSString *deviceName = [dev.name stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
-	NSString *deviceModel = [dev.model stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
+	NSString *deviceName = dev.name;
+	NSString *deviceModel = dev.model;
 	NSString *deviceSystemVersion = dev.systemVersion;
 	
 	// Prepare the Device Token for Registration (remove spaces and < >)
@@ -75,7 +75,7 @@
 	
 	// Register the Device Data
 	// !!! CHANGE "http" TO "https" IF YOU ARE USING HTTPS PROTOCOL
-	NSURL *url = [[NSURL alloc] initWithScheme:@"http" host:host path:[urlString stringByAddingPercentEscapesUsingEncoding:NSASCIIStringEncoding]];
+	NSURL *url = [[NSURL alloc] initWithScheme:@"http" host:host path:[urlString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
     NSURLRequest *request = [[NSURLRequest alloc] initWithURL:url];
 	NSData *returnData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:nil];
 	NSLog(@"Register URL: %@", url);
