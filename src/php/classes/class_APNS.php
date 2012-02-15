@@ -220,8 +220,12 @@ class APNS {
 					);
 					break;
 
-				case "fetch";
+				case "fetch":
 					$this->_fetchMessages();
+					break;
+
+				case "flush":
+					$this->_flushMessages();
 					break;
 
 				default:
@@ -379,6 +383,46 @@ class APNS {
 			}
 		}
 	}
+
+	/**
+	 * Flush Messages
+	 *
+	 * This gets called by a cron job that runs as often as you want.  You might want to set it for every minute.
+	 * Like _fetchMessages, but sends all the messages for each device (_fetchMessage sends only the first message for device)
+	 *
+	 * @param string $token 64 character unique device token tied to device id
+	 * @access private
+	 */
+	private function _flushMessages(){
+		// only send one message per user... oldest message first
+		$sql = "SELECT
+				`apns_messages`.`pid`,
+				`apns_messages`.`message`,
+				`apns_devices`.`devicetoken`,
+				`apns_devices`.`development`
+			FROM `apns_messages`
+			LEFT JOIN `apns_devices` ON (`apns_devices`.`pid` = `apns_messages`.`fk_device` AND `apns_devices`.`clientid` = `apns_messages`.`clientid`)
+			WHERE `apns_messages`.`status`='queued'
+				AND `apns_messages`.`delivery` <= NOW()
+				AND `apns_devices`.`status`='active'
+			ORDER BY `apns_messages`.`created` ASC
+			LIMIT 100;";
+
+		if($result = $this->db->query($sql)){
+			var_dump ($result);
+			if($result->num_rows){
+				while($row = $result->fetch_array(MYSQLI_ASSOC)){
+					$pid = $this->db->prepare($row['pid']);
+					$message = stripslashes($this->db->prepare($row['message']));
+					$token = $this->db->prepare($row['devicetoken']);
+					$development = $this->db->prepare($row['development']);
+					$this->_pushMessage($pid, $message, $token, $development);
+				}
+			}
+		}
+	}
+
+
 
 	/**
 	 * Push APNS Messages
@@ -609,6 +653,30 @@ class APNS {
 		$this->message['send']['to'] = $fk_device;
 		$this->message['send']['when'] = $delivery;
 	}
+
+	/**
+	 * Start a New Message. Like newMessage, but takes the deviceUId instead of fk_device.
+	 * Actually fetches the pid from the db and then calls the plain newMessage.
+	 *
+	 * @param mixed $deviceUId The DeviceUId you want to send the message to.
+	 * @param string $delivery Possible future date to send the message.
+	 * @access public
+	 */
+	public function newMessageByDeviceUId($deviceUId=NULL, $delivery=NULL, $clientId=NULL) {
+		
+		$sql = "SELECT `pid` FROM `apns_devices` WHERE `deviceuid`='$deviceUId'";
+
+		$result = $this->db->query($sql);
+		$row = $result->fetch_array(MYSQLI_ASSOC);
+
+		if ($row != NULL)
+			$this->newMessage ($row["pid"], $delivery, $clientId);
+
+
+	}
+
+
+
 
 	/**
 	 * Queue Message for Delivery
