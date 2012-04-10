@@ -139,6 +139,14 @@ class APNS {
 	private $message;
 
 	/**
+	* Streams connected to APNS server[s]
+	*
+	* @var array
+	* @access private
+	*/
+	private $sslStreams;
+
+	/**
 	 * Constructor.
 	 *
 	 * Initializes a database connection and perfoms any tasks that have been assigned.
@@ -166,7 +174,7 @@ class APNS {
 	 * Your iPhone App Delegate.m file will point to a PHP file with this APNS Object.  The url will end up looking something like:
 	 * https://secure.yourwebsite.com/apns.php?task=register&appname=My%20App&appversion=1.0.1&deviceuid=e018c2e46efe185d6b1107aa942085a59bb865d9&devicetoken=43df9e97b09ef464a6cf7561f9f339cb1b6ba38d8dc946edd79f1596ac1b0f66&devicename=My%20Awesome%20iPhone&devicemodel=iPhone&deviceversion=3.1.2&pushbadge=enabled&pushalert=disabled&pushsound=enabled
 	 *
-	 * @param object $db Database Object
+	 * @param object|DbConnectAPNS $db Database Object
 	 * @param array $args Optional arguments passed through $argv or $_GET
 	 * @param string $certificate Path to the production certificate.
 	 * @param string $sandboxCertificate Path to the production certificate.
@@ -216,7 +224,7 @@ class APNS {
 						$args['pushbadge'],
 						$args['pushalert'],
 						$args['pushsound'],
-						$args['clientid']
+						isset($args['clientid'])?$args['clientid']:null
 					);
 					break;
 
@@ -352,7 +360,6 @@ class APNS {
 	 *
 	 * This gets called by a cron job that runs as often as you want.  You might want to set it for every minute.
 	 *
-	 * @param string $token 64 character unique device token tied to device id
 	 * @access private
 	 */
 	private function _fetchMessages(){
@@ -371,17 +378,7 @@ class APNS {
 			ORDER BY `apns_messages`.`created` ASC
 			LIMIT 100;";
 
-		if($result = $this->db->query($sql)){
-			if($result->num_rows){
-				while($row = $result->fetch_array(MYSQLI_ASSOC)){
-					$pid = $this->db->prepare($row['pid']);
-					$message = stripslashes($this->db->prepare($row['message']));
-					$token = $this->db->prepare($row['devicetoken']);
-					$development = $this->db->prepare($row['development']);
-					$this->_pushMessage($pid, $message, $token, $development);
-				}
-			}
-		}
+		$this->_iterateMessages($sql);
 	}
 
 	/**
@@ -390,7 +387,6 @@ class APNS {
 	 * This gets called by a cron job that runs as often as you want.  You might want to set it for every minute.
 	 * Like _fetchMessages, but sends all the messages for each device (_fetchMessage sends only the first message for device)
 	 *
-	 * @param string $token 64 character unique device token tied to device id
 	 * @access private
 	 */
 	private function _flushMessages(){
@@ -408,21 +404,74 @@ class APNS {
 			ORDER BY `apns_messages`.`created` ASC
 			LIMIT 100;";
 
+		$this->_iterateMessages($sql);
+	}
+
+	/**
+	 * Iterate Messages
+	 *
+	 * This gets called by _fetchMessages and _flushMessages to loop over the list of messages that they selected
+	 * to be sent out from the database.
+	 *
+	 * @param string $sql Query which selects messages in the database
+	 * @access private
+	 */
+	private function _iterateMessages($sql) {
 		if($result = $this->db->query($sql)){
-			var_dump ($result);
+			//var_dump ($result);
 			if($result->num_rows){
 				while($row = $result->fetch_array(MYSQLI_ASSOC)){
 					$pid = $this->db->prepare($row['pid']);
 					$message = stripslashes($this->db->prepare($row['message']));
 					$token = $this->db->prepare($row['devicetoken']);
 					$development = $this->db->prepare($row['development']);
+
+					// Connect the socket the first time it's needed.
+					if(!isset($this->sslStreams[$development])) {
+						$this->_connectSSLSocket($development);
+					}
 					$this->_pushMessage($pid, $message, $token, $development);
+				}
+				// Close streams and check feedback service
+				foreach($this->sslStreams as $key=>$socket) {
+					$this->_closeSSLSocket($key);
+					$this->_checkFeedback($key);
 				}
 			}
 		}
 	}
 
-
+	/**
+	 * Connect the SSL stream (sandbox or production)
+	 *
+	 * @param $development string Development environment - sandbox or production
+	 * @return bool|resource status whether the socket connected or not.
+	 * @access private
+	 */
+	private function _connectSSLSocket($development) {
+		$ctx = stream_context_create();
+		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
+		$this->sslStreams[$development] = stream_socket_client($this->apnsData[$development]['ssl'], $error, $errorString, 100, (STREAM_CLIENT_CONNECT|STREAM_CLIENT_PERSISTENT), $ctx);
+		if(!$this->sslStreams[$development]){
+			$this->_triggerError("Failed to connect to APNS: {$error} {$errorString}.");
+			unset($this->sslStreams[$development]);
+			return false;
+		}
+		return $this->sslStreams[$development];
+	}
+	/**
+	 * Close the SSL stream (sandbox or production)
+	 *
+	 * @param $development string Development environment - sandbox or production
+	 * @return void
+	 * @access private
+	 */
+	private function _closeSSLSocket($development) {
+		if(isset($this->sslStreams[$development])) {
+			fclose($this->sslStreams[$development]);
+			unset($this->sslStreams[$development]);
+		}
+	}
 
 	/**
 	 * Push APNS Messages
@@ -441,29 +490,94 @@ class APNS {
 		if(strlen($token)==0) $this->_triggerError('Missing message token.', E_USER_ERROR);
 		if(strlen($development)==0) $this->_triggerError('Missing development status.', E_USER_ERROR);
 
-		$ctx = stream_context_create();
-		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
-		$fp = stream_socket_client($this->apnsData[$development]['ssl'], $error, $errorString, 100, (STREAM_CLIENT_CONNECT|STREAM_CLIENT_PERSISTENT), $ctx);
-
+		$fp = false;
+		if(isset($this->sslStreams[$development])) {
+			$fp = $this->sslStreams[$development];
+		}
 
 		if(!$fp){
 			$this->_pushFailed($pid);
-			$this->_triggerError("Failed to connect to APNS: {$error} {$errorString}.");
+			$this->_triggerError("A connected socket to APNS wasn't available.");
 		}
 		else {
-			$msg = chr(0).pack("n",32).pack('H*',$token).pack("n",strlen($message)).$message;
+			// "For optimum performance, you should batch multiple notifications in a single transmission over the
+			// interface, either explicitly or using a TCP/IP Nagle algorithm."
+
+			// Simple notification format (Bytes: content.) :
+			// 1: 0. 2: Token length. 32: Device Token. 2: Payload length. 34: Payload
+			//$msg = chr(0).pack("n",32).pack('H*',$token).pack("n",strlen($message)).$message;
+
+			// Enhanced notification format: ("recommended for most providers")
+			// 1: 1. 4: Identifier. 4: Expiry. 2: Token length. 32: Device Token. 2: Payload length. 34: Payload
+			$expiry = time()+120; // 2 minute validity hard coded!
+			$msg = chr(1).pack("N",$pid).pack("N",$expiry).pack("n",32).pack('H*',$token).pack("n",strlen($message)).$message;
+
 			$fwrite = fwrite($fp, $msg);
 			if(!$fwrite) {
 				$this->_pushFailed($pid);
 				$this->_triggerError("Failed writing to stream.", E_USER_ERROR);
+				$this->_closeSSLSocket($development);
 			}
 			else {
-				$this->_pushSuccess($pid);
+				// "Provider Communication with Apple Push Notification Service"
+				// http://developer.apple.com/library/ios/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/CommunicatingWIthAPS/CommunicatingWIthAPS.html#//apple_ref/doc/uid/TP40008194-CH101-SW1
+				// "If you send a notification and APNs finds the notification malformed or otherwise unintelligible, it
+				// returns an error-response packet prior to disconnecting. (If there is no error, APNs doesn't return
+				// anything.)"
+				// 
+				// This complicates the read if it blocks.
+				// The timeout (if using a stream_select) is dependent on network latency.
+				// default socket timeout is 60 seconds
+				// Without a read, we leave a false positive on this push's success.
+				// The next write attempt will fail correctly since the socket will be closed.
+				//
+				// This can be done if we start batching the write
+
+				// Read response from server if any. Or if the socket was closed.
+				// [Byte: data.] 1: 8. 1: status. 4: Identifier.
+				$tv_sec = 1;
+				$tv_usec = null; // Timeout. 1 million micro seconds = 1 second
+				$r = array($fp); $we = null; // Temporaries. "Only variables can be passed as reference."
+				$numChanged = stream_select($r, $we, $we, $tv_sec, $tv_usec);
+				if(false===$numChanged) {
+					$this->_triggerError("Failed selecting stream to read.", E_USER_ERROR);
+				}
+				else if($numChanged>0) {
+					$command = ord(fread($fp, 1));
+					$status = ord(fread($fp, 1));
+					$identifier = implode('', unpack("N", fread($fp, 4)));
+					$statusDesc = array(
+						0 => 'No errors encountered',
+						1 => 'Processing error',
+						2 => 'Missing device token',
+						3 => 'Missing topic',
+						4 => 'Missing payload',
+						5 => 'Invalid token size',
+						6 => 'Invalid topic size',
+						7 => 'Invalid payload size',
+						8 => 'Invalid token',
+						255 => 'None (unknown)',
+					);
+					$this->_triggerError("APNS responded with command($command) status($status) pid($identifier).", E_USER_NOTICE);
+
+					if($status>0) {
+						// $identifier == $pid
+						$this->_pushFailed($pid);
+						$desc = isset($statusDesc[$status])?$statusDesc[$status]: 'Unknown';
+						$this->_triggerError("APNS responded with error for pid($identifier). status($status: $desc)", E_USER_ERROR);
+						// The socket has also been closed. Cause reopening in the loop outside.
+						$this->_closeSSLSocket($development);
+					}
+					else {
+						// Apple docs state that it doesn't return anything on success though
+						$this->_pushSuccess($pid);
+					}
+				} else {
+					$this->_pushSuccess($pid);
+				}
 			}
 		}
-		fclose($fp);
 
-		$this->_checkFeedback($development);
 	}
 
 	/**
@@ -771,6 +885,14 @@ class APNS {
 				if($pushsound=='disabled'){
 					$this->_triggerError('This user has disabled Push Sound Notifications, Sound will not be delivered.');
 					unset($usermessage['aps']['sound']);
+				}
+
+				if(is_null($usermessage['aps']['clientid'])) {
+					unset($usermessage['aps']['clientid']);
+				}
+
+				if(empty($usermessage['aps'])) {
+					unset($usermessage['aps']);
 				}
 
 				$fk_device = $this->db->prepare($deviceid);
