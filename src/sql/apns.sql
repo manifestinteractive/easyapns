@@ -51,7 +51,7 @@ CREATE TABLE `apns_devices` (
   `created` datetime NOT NULL,
   `modified` timestamp NOT NULL default '0000-00-00 00:00:00' on update CURRENT_TIMESTAMP,
   PRIMARY KEY  (`pid`),
-  UNIQUE KEY `appname` (`appname`,`appversion`,`deviceuid`),
+  UNIQUE KEY `appname` (`appname`,`deviceuid`),
   KEY `clientid` (`clientid`),
   KEY `devicetoken` (`devicetoken`),
   KEY `devicename` (`devicename`),
