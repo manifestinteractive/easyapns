@@ -83,6 +83,14 @@ class APNS {
 	private $logMaxSize = 1048576; // max log size before it is truncated
 
 	/**
+	* Passphrase for Private Key with passphrase
+	*
+	* @var string
+	* @access private
+	*/
+	private $passphrase = '';
+
+	/**
 	* Absolute path to your Production Certificate
 	*
 	* @var string
@@ -451,6 +459,8 @@ class APNS {
 	private function _connectSSLSocket($development) {
 		$ctx = stream_context_create();
 		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
+		if ($this->passphrase)
+			stream_context_set_option($ctx, 'ssl', 'passphrase', $this->passphrase);
 		$this->sslStreams[$development] = stream_socket_client($this->apnsData[$development]['ssl'], $error, $errorString, 100, (STREAM_CLIENT_CONNECT|STREAM_CLIENT_PERSISTENT), $ctx);
 		if(!$this->sslStreams[$development]){
 			$this->_triggerError("Failed to connect to APNS: {$error} {$errorString}.");
@@ -591,6 +601,8 @@ class APNS {
 	private function _checkFeedback($development){
 		$ctx = stream_context_create();
 		stream_context_set_option($ctx, 'ssl', 'local_cert', $this->apnsData[$development]['certificate']);
+		if ($this->passphrase)
+			stream_context_set_option($ctx, 'ssl', 'passphrase', $this->passphrase);
 		stream_context_set_option($ctx, 'ssl', 'verify_peer', false);
 		$fp = stream_socket_client($this->apnsData[$development]['feedback'], $error,$errorString, 100, (STREAM_CLIENT_CONNECT|STREAM_CLIENT_PERSISTENT), $ctx);
 
