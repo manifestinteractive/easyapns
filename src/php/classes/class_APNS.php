@@ -581,7 +581,9 @@ class APNS {
 				else if($numChanged>0) {
 					$command = ord(fread($fp, 1));
 					$status = ord(fread($fp, 1));
-					$identifier = implode('', unpack("N", fread($fp, 4)));
+					$identifier = "";
+					$identifierBinary = fread($fp, 4);
+					if(strlen($identifierBinary)==4) $identifier = implode('', unpack("N", $identifierBinary));
 					$statusDesc = array(
 						0 => 'No errors encountered',
 						1 => 'Processing error',
