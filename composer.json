@@ -20,7 +20,7 @@
     ],
     "autoload": {
         "psr-0": {
-            "ManifestInteractive\\easyapns": "src/php/classes"
+            "EasyAPNs": "src/php/classes"
         }
     }
 }
