@@ -1,0 +1,26 @@
+{
+    "name": "manifestinteractive/easyapns",
+    "description": "Apple Push Notification Service Library in PHP that is easy to use",
+    "homepage": "http://www.easyapns.com",
+    "license": "Apache-2.0",
+    "support": {
+        "issues": "https://github.com/manifestinteractive/easyapns/issues",
+        "source": "https://github.com/manifestinteractive/easyapns"
+    },
+    "authors": [
+        {
+            "name": "Peter Schmalfeldt",
+            "homepage": "http://www.manifestinteractive.com"
+        }
+    ],
+    "keywords": [
+        "easyapns",
+        "apns",
+        "push notification"
+    ],
+    "autoload": {
+        "psr-0": {
+            "ManifestInteractive\\easyapns": "src/php/classes"
+        }
+    }
+}
