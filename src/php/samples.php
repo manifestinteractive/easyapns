@@ -34,7 +34,7 @@
 // AUTOLOAD CLASS OBJECTS... YOU CAN USE INCLUDES IF YOU PREFER
 if(!function_exists("__autoload")){ 
 	function __autoload($class_name){
-		require_once('classes/class_'.$class_name.'.php');
+		require_once('classes/EasyAPNs/'.$class_name.'.php');
 	}
 }
 
