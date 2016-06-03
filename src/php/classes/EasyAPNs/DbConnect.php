@@ -28,6 +28,8 @@
  * @link http://code.google.com/p/easyapns/
  */
 
+namespace EasyAPNs;
+
 /**
  * Begin Document
  */
@@ -175,7 +177,7 @@ class DbConnect
 	*/
 	function connect()
 	{
-		self::$instance = new mysqli($this->DB_HOST, $this->DB_USERNAME, $this->DB_PASSWORD, $this->DB_DATABASE);
+		self::$instance = new \mysqli($this->DB_HOST, $this->DB_USERNAME, $this->DB_PASSWORD, $this->DB_DATABASE);
 
 		if (mysqli_connect_errno()) {
 			$this->raise_error(printf("Connect failed: %s\n", mysqli_connect_error()));

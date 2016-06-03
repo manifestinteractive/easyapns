@@ -27,6 +27,8 @@
  * @link http://code.google.com/p/easyapns/
  */
 
+namespace EasyAPNs;
+
 /**
  * Begin Document
  */
