@@ -70,6 +70,14 @@ class APNS {
 	* @access private
 	*/
 	private $logErrors = true;
+	
+	/**
+	* Define a MySQL table prefix
+	*
+	* @var string
+	* @access private
+	*/
+	private $tblPrefix = '';
 
 	/**
 	* Log path for APNS errors
@@ -134,7 +142,7 @@ class APNS {
         * @access private				      
         */						      
         private $sandboxPassphrase = 'passphrase';	
-	
+
 	/**
 	* Apples Sandbox APNS Gateway
 	*
@@ -199,10 +207,12 @@ class APNS {
 	 * @param array $args Optional arguments passed through $argv or $_GET
 	 * @param string $certificate Path to the production certificate.
 	 * @param string $sandboxCertificate Path to the production certificate.
+	 * @param string $environment Specify the choosen environment (production or sandbox)
 	 * @param string $logPath Path to the log file.
+	 * @param string $tblPrefix define a table prefix for MySQL tables
 	 * @access 	public
 	 */
-	function __construct($db, $args=NULL, $certificate=NULL, $sandboxCertificate=NULL, $logPath=NULL, $environment=NULL) {
+	function __construct($db, $args=NULL, $certificate=NULL, $sandboxCertificate=NULL, $logPath=NULL, $environment=NULL, $tblPrefix=NULL) {
 
 		if(!empty($certificate) && file_exists($certificate))
 		{
@@ -212,6 +222,11 @@ class APNS {
 		if(!empty($sandboxCertificate) && file_exists($sandboxCertificate))
 		{
 			$this->sandboxCertificate = $sandboxCertificate;
+		}
+		
+		if(!empty($tblPrefix))
+		{
+   			$this->tblPrefix = $tblPrefix;
 		}
 
 		$this->db = $db;
@@ -338,7 +353,7 @@ class APNS {
 
 		// store device for push notifications
 		$this->db->query("SET NAMES 'utf8';"); // force utf8 encoding if not your default
-		$sql = "INSERT INTO `apns_devices`
+		$sql = "INSERT INTO `{$this->tblPrefix}apns_devices`
 				VALUES (
 					NULL,
 					'{$clientid}',
@@ -383,7 +398,7 @@ class APNS {
 	 * @access private
 	 */
 	private function _unregisterDevice($token){
-		$sql = "UPDATE `apns_devices`
+		$sql = "UPDATE `{$this->tblPrefix}apns_devices`
 				SET `status`='uninstalled'
 				WHERE `devicetoken`='{$token}'
 				LIMIT 1;";
@@ -400,17 +415,17 @@ class APNS {
 	private function _fetchMessages(){
 		// only send one message per user... oldest message first
 		$sql = "SELECT
-				`apns_messages`.`pid`,
-				`apns_messages`.`message`,
-				`apns_devices`.`devicetoken`,
-				`apns_devices`.`development`
-			FROM `apns_messages`
-			LEFT JOIN `apns_devices` ON (`apns_devices`.`pid` = `apns_messages`.`fk_device` AND `apns_devices`.`clientid` = `apns_messages`.`clientid`)
-			WHERE `apns_messages`.`status`='queued'
-				AND `apns_messages`.`delivery` <= NOW()
-				AND `apns_devices`.`status`='active'
-			GROUP BY `apns_messages`.`fk_device`
-			ORDER BY `apns_messages`.`created` ASC
+				`{$this->tblPrefix}apns_messages`.`pid`,
+				`{$this->tblPrefix}apns_messages`.`message`,
+				`{$this->tblPrefix}apns_devices`.`devicetoken`,
+				`{$this->tblPrefix}apns_devices`.`development`
+			FROM `{$this->tblPrefix}apns_messages`
+			LEFT JOIN `{$this->tblPrefix}apns_devices` ON (`{$this->tblPrefix}apns_devices`.`pid` = `{$this->tblPrefix}apns_messages`.`fk_device` AND `{$this->tblPrefix}apns_devices`.`clientid` = `{$this->tblPrefix}apns_messages`.`clientid`)
+			WHERE `{$this->tblPrefix}apns_messages`.`status`='queued'
+				AND `{$this->tblPrefix}apns_messages`.`delivery` <= NOW()
+				AND `{$this->tblPrefix}apns_devices`.`status`='active'
+			GROUP BY `{$this->tblPrefix}apns_messages`.`fk_device`
+			ORDER BY `{$this->tblPrefix}apns_messages`.`created` ASC
 			LIMIT 100;";
 
 		$this->_iterateMessages($sql);
@@ -427,16 +442,16 @@ class APNS {
 	private function _flushMessages(){
 		// only send one message per user... oldest message first
 		$sql = "SELECT
-				`apns_messages`.`pid`,
-				`apns_messages`.`message`,
-				`apns_devices`.`devicetoken`,
-				`apns_devices`.`development`
-			FROM `apns_messages`
-			LEFT JOIN `apns_devices` ON (`apns_devices`.`pid` = `apns_messages`.`fk_device` AND `apns_devices`.`clientid` = `apns_messages`.`clientid`)
-			WHERE `apns_messages`.`status`='queued'
-				AND `apns_messages`.`delivery` <= NOW()
-				AND `apns_devices`.`status`='active'
-			ORDER BY `apns_messages`.`created` ASC
+				`{$this->tblPrefix}apns_messages`.`pid`,
+				`{$this->tblPrefix}apns_messages`.`message`,
+				`{$this->tblPrefix}apns_devices`.`devicetoken`,
+				`{$this->tblPrefix}apns_devices`.`development`
+			FROM `{$this->tblPrefix}apns_messages`
+			LEFT JOIN `{$this->tblPrefix}apns_devices` ON (`{$this->tblPrefix}apns_devices`.`pid` = `{$this->tblPrefix}apns_messages`.`fk_device` AND `{$this->tblPrefix}apns_devices`.`clientid` = `{$this->tblPrefix}apns_messages`.`clientid`)
+			WHERE `{$this->tblPrefix}apns_messages`.`status`='queued'
+				AND `{$this->tblPrefix}apns_messages`.`delivery` <= NOW()
+				AND `{$this->tblPrefix}apns_devices`.`status`='active'
+			ORDER BY `{$this->tblPrefix}apns_messages`.`created` ASC
 			LIMIT 100;";
 
 		$this->_iterateMessages($sql);
@@ -653,7 +668,7 @@ class APNS {
 	 * @access private
 	 */
 	private function _pushSuccess($pid){
-		$sql = "UPDATE `apns_messages`
+		$sql = "UPDATE `{$this->tblPrefix}apns_messages`
 				SET `status`='delivered'
 				WHERE `pid`={$pid}
 				LIMIT 1;";
@@ -669,7 +684,7 @@ class APNS {
 	 * @access private
 	 */
 	private function _pushFailed($pid){
-		$sql = "UPDATE `apns_messages`
+		$sql = "UPDATE `{$this->tblPrefix}apns_messages`
 				SET `status`='failed'
 				WHERE `pid`={$pid}
 				LIMIT 1;";
@@ -784,7 +799,7 @@ class APNS {
 		// If no device is specified then that means we sending a message to all.
 		if (is_null($fk_device))
 		{
-			$sql = "SELECT `pid` FROM `apns_devices` WHERE `status`='active'";
+			$sql = "SELECT `pid` FROM `{$this->tblPrefix}apns_devices` WHERE `status`='active'";
 
 			// Only to a set of client?
 			if (!is_null($clientId))
@@ -815,7 +830,7 @@ class APNS {
 	 */
 	public function newMessageByDeviceUId($deviceUId=NULL, $delivery=NULL, $clientId=NULL) {
 		
-		$sql = "SELECT `pid` FROM `apns_devices` WHERE `deviceuid`='$deviceUId'";
+		$sql = "SELECT `pid` FROM `{$this->tblPrefix}apns_devices` WHERE `deviceuid`='$deviceUId'";
 
 		$result = $this->db->query($sql);
 		$row = $result->fetch_array(MYSQLI_ASSOC);
@@ -875,7 +890,7 @@ class APNS {
 		// fetch the users id and check to make sure they have certain notifications enabled before trying to send anything to them.
 		$sql = "
 			SELECT `pid`, `pushbadge`, `pushalert`, `pushsound`
-			FROM `apns_devices`
+			FROM `{$this->tblPrefix}apns_devices`
 			WHERE `pid` IN (" . implode(', ', $list) . ")
 				AND `status`='active'" . (is_null($clientId) ? '' : "
 				AND `clientid` = '{$clientId}'");
@@ -943,7 +958,7 @@ class APNS {
 					$delivery = (!empty($when)) ? "'{$when}'":'NOW()';
 
 					$this->db->query("SET NAMES 'utf8';"); // force utf8 encoding if not your default
-					$sql = "INSERT INTO `apns_messages`
+					$sql = "INSERT INTO `{$this->tblPrefix}apns_messages`
 						VALUES (
 							NULL,
 							'{$clientId}',
