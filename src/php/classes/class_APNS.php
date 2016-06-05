@@ -692,6 +692,9 @@ class APNS {
 		$error .= "\n";
 		$i=1;
 		foreach($backtrace as $errorcode){
+			$file = (isset($errorcode['file']) ? $errorcode['file'] : "");
+		        $class = (isset($errorcode['class']) ? $errorcode['class'] : "");
+		        $function = (isset($errorcode['function']) ? $errorcode['function'] : "");
 			$file = ($errorcode['file']!='') ? "-> File: ".basename($errorcode['file'])." (line ".$errorcode['line'].")":"";
 			$error .= "\n\t".$i.") ".$errorcode['class']."::".$errorcode['function']." {$file}";
 			$i++;
